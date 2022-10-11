@@ -11,9 +11,8 @@ import (
 
 func TestUpdateMetrics(t *testing.T) {
 	type want struct {
-		code        int
-		response    string
-		contentType string
+		code     int
+		response string
 	}
 	tests := []struct {
 		name        string
@@ -28,9 +27,8 @@ func TestUpdateMetrics(t *testing.T) {
 			contentType: "application/json",
 			args:        "",
 			want: want{
-				code:        400,
-				response:    "Only text/plain Content-Type header is allowed",
-				contentType: "text/plain; charset=utf-8",
+				code:     400,
+				response: "Only text/plain Content-Type header is allowed",
 			},
 		},
 		{
@@ -39,20 +37,18 @@ func TestUpdateMetrics(t *testing.T) {
 			args:        "gauge/Alloc/1.23445",
 			contentType: "text/plain",
 			want: want{
-				code:        405,
-				response:    "Only POST request are allowed",
-				contentType: "text/plain; charset=utf-8",
+				code:     405,
+				response: "Only POST request are allowed",
 			},
 		},
 		{
-			name:        "wrong method",
+			name:        "positive",
 			method:      http.MethodPost,
 			args:        "gauge/Alloc/1.23445",
 			contentType: "text/plain",
 			want: want{
-				code:        200,
-				response:    "data accepted",
-				contentType: "text/plain; charset=utf-8",
+				code:     200,
+				response: "data accepted",
 			},
 		},
 		{
@@ -61,9 +57,58 @@ func TestUpdateMetrics(t *testing.T) {
 			args:        "gauge/Alloc/",
 			contentType: "text/plain",
 			want: want{
-				code:        400,
-				response:    "Can't parse url '/update/gauge/Alloc/'",
-				contentType: "text/plain; charset=utf-8",
+				code:     400,
+				response: "metric value not found",
+			},
+		},
+		{
+			name:        "no metric name (gauge)",
+			method:      http.MethodPost,
+			args:        "gauge/",
+			contentType: "text/plain",
+			want: want{
+				code:     404,
+				response: "Не указано имя метрики",
+			},
+		},
+		{
+			name:        "no metric name #2 (counter)",
+			method:      http.MethodPost,
+			args:        "counter/",
+			contentType: "text/plain",
+			want: want{
+				code:     404,
+				response: "Не указано имя метрики",
+			},
+		},
+		{
+			name:        "wrong metric value #1 (gauge)",
+			method:      http.MethodPost,
+			args:        "gauge/Alloc/none",
+			contentType: "text/plain",
+			want: want{
+				code:     400,
+				response: "Incorrect metric value",
+			},
+		},
+		{
+			name:        "wrong metric value #2 (counter)",
+			method:      http.MethodPost,
+			args:        "counter/Alloc/none",
+			contentType: "text/plain",
+			want: want{
+				code:     400,
+				response: "Incorrect metric value",
+			},
+		},
+		{
+			name:        "counter update",
+			method:      http.MethodPost,
+			args:        "counter/Alloc/100",
+			contentType: "text/plain",
+			want: want{
+				code:     200,
+				response: "data accepted",
 			},
 		},
 	}
@@ -90,8 +135,8 @@ func TestUpdateMetrics(t *testing.T) {
 				t.Errorf("Expected body '%s', got '%s'", tt.want.response, w.Body.String())
 			}
 
-			if res.Header.Get("Content-Type") != tt.want.contentType {
-				t.Errorf("Expected Content-Type %s, got %s", tt.want.contentType, res.Header.Get("Content-Type"))
+			if res.Header.Get("Content-Type") != "text/plain; charset=utf-8" {
+				t.Errorf("Expected Content-Type %s, got %s", "text/plain; charset=utf-8", res.Header.Get("Content-Type"))
 			}
 		})
 	}

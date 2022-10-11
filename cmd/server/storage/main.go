@@ -3,7 +3,6 @@ package storage
 import (
 	"github.com/pkg/errors"
 	"reflect"
-	"regexp"
 	"strconv"
 )
 
@@ -42,19 +41,17 @@ type MemStorage struct {
 	RandomValue   gauge
 }
 
+type MetricsUrl struct {
+	Name  string
+	Type  string
+	Value string
+}
+
 type storage interface {
 	Update()
 }
 
-const (
-	urlParserRegexp = `update/(\S+)/(\S+)/(\S+)$`
-)
-
-func (m *MemStorage) Update(url string) error {
-	data, err := parseMetricsURL(url)
-	if err != nil {
-		return err
-	}
+func (m *MemStorage) Update(data MetricsUrl) error {
 
 	if data.Name == "PollCount" {
 		pc, _ := strconv.Atoi(data.Value)
@@ -78,25 +75,4 @@ func (m *MemStorage) Update(url string) error {
 func setValueByName(v interface{}, field string, newval interface{}) {
 	r := reflect.ValueOf(v).Elem().FieldByName(field)
 	r.Set(reflect.ValueOf(newval))
-}
-
-type metricsUrl struct {
-	Name  string
-	Type  string
-	Value string
-}
-
-func parseMetricsURL(url string) (metricsUrl, error) {
-	re := regexp.MustCompile(urlParserRegexp)
-	result := re.FindStringSubmatch(url)
-
-	if len(result) < 4 {
-		return metricsUrl{}, errors.Errorf("Can't parse url '%v'", url)
-	}
-
-	return metricsUrl{
-		Name:  result[2],
-		Type:  result[1],
-		Value: result[3],
-	}, nil
 }

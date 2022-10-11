@@ -11,5 +11,8 @@ const (
 
 func main() {
 	http.HandleFunc("/update/", handlers.UpdateMetrics)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "", http.StatusNotFound)
+	})
 	http.ListenAndServe(port, nil)
 }
