@@ -27,7 +27,10 @@ func main() {
 			poll = time.After(pollInterval)
 
 		case <-report:
-			sendMetrics(m)
+			err := sendMetrics(m)
+			if err != nil {
+				panic(err)
+			}
 			report = time.After(reportInterval)
 		}
 	}
@@ -69,7 +72,6 @@ type Metrics struct {
 }
 
 var pollCount counter = 0
-var randomValue gauge
 
 const (
 	pollInterval   = 2 * time.Second
@@ -136,7 +138,11 @@ func sendMetrics(metrics Metrics) error {
 
 		url := genURL(host, port, valueType, key, fmt.Sprintf("%v", value))
 		fmt.Println(url)
-		http.Post(url, contentType, nil)
+
+		_, err := http.Post(url, contentType, nil)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
