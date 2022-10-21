@@ -2,32 +2,32 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/rekh/_temp/goprocoursedevopsproject/cmd/server/storage"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/rekh/_temp/goprocoursedevopsproject/internal"
 )
 
 const (
 	contentType = "text/plain"
-	//urlParserRegexp = `update/(\S+)/(\S+)/(\S+)$`
-	urlParserRegexp = `[^\/\n]+`
 )
 
-var memStorage storage.MemStorage
+var memStorage internal.MemStorage
 
 func GetMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := memStorage.GetMetrics()
 
 	var list string
 	for _, v := range metrics {
-		list += fmt.Sprintf("<br>%v = %v</br>", v.Name, v.Value)
+		list += fmt.Sprintf("%v = %v\n", v.Name, v.Value)
 	}
-	page := fmt.Sprintf("<html><body>%v</body></html>", list)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, page)
+	fmt.Fprintln(w, list)
 }
 
 func GetMetric(w http.ResponseWriter, r *http.Request) {
@@ -60,39 +60,30 @@ func UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//url := r.URL.String()
-	//re := regexp.MustCompile(urlParserRegexp)
-	//result := re.FindAllStringSubmatch(url, -1)
-	data := storage.MetricsUrl{}
+	url := strings.Split(r.URL.String(), "/")[2:]
 
-	mt := chi.URLParam(r, "type")
-	mn := chi.URLParam(r, "name")
-	mv := chi.URLParam(r, "value")
-
-	fmt.Println(mt + mn + mv)
-
-	if len(mn) == 0 {
-		http.Error(w, "Не указано имя метрики", http.StatusNotFound)
+	l := len(url)
+	if l == 1 {
+		http.Error(w, "metric name is not found", http.StatusNotFound)
 		return
 	}
+	if l == 2 {
+		if len(url[1]) == 0 {
+			http.Error(w, "metric name is not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "metric value is not found", http.StatusBadRequest)
+		return
+	}
+
+	mt := url[0]
+	mn := url[1]
+	mv := url[2]
+
 	if mt != "gauge" && mt != "counter" {
 		http.Error(w, "Incorrect metric type", http.StatusNotImplemented)
 		return
 	}
-
-	data.Type = mt
-
-	if len(mv) == 0 {
-		http.Error(w, "metric value not found", http.StatusBadRequest)
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST request are allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	data.Name = mn
 
 	_, err := strconv.ParseFloat(mv, 64)
 
@@ -100,7 +91,12 @@ func UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect metric value", http.StatusBadRequest)
 		return
 	}
-	data.Value = mv
+
+	data := internal.MetricsURL{
+		Type:  mt,
+		Name:  mn,
+		Value: mv,
+	}
 	err = memStorage.Update(data)
 
 	status := http.StatusOK
@@ -114,20 +110,3 @@ func UpdateMetrics(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(status)
 	fmt.Fprintln(w, message)
 }
-
-//type MetricsUrl struct {
-//	Name  string
-//	Type  string
-//	Value string
-//}
-
-//func parseMetricsURL(url string) (MetricsUrl, error) {
-//	re := regexp.MustCompile(urlParserRegexp)
-//	result := re.FindStringSubmatch(url)
-//
-//	return MetricsUrl{
-//		Name:  result[2],
-//		Type:  result[1],
-//		Value: result[3],
-//	}, nil
-//}

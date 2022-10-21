@@ -14,6 +14,7 @@ func TestUpdateMetrics(t *testing.T) {
 		code     int
 		response string
 	}
+
 	tests := []struct {
 		name        string
 		method      string
@@ -32,19 +33,9 @@ func TestUpdateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:        "wrong method",
-			method:      http.MethodGet,
-			args:        "gauge/Alloc/1.23445",
-			contentType: "text/plain",
-			want: want{
-				code:     405,
-				response: "Only POST request are allowed",
-			},
-		},
-		{
 			name:        "positive",
 			method:      http.MethodPost,
-			args:        "gauge/Alloc/1.23445",
+			args:        "gauge/gAlloc/1.23445",
 			contentType: "text/plain",
 			want: want{
 				code:     200,
@@ -54,11 +45,11 @@ func TestUpdateMetrics(t *testing.T) {
 		{
 			name:        "wrong args",
 			method:      http.MethodPost,
-			args:        "gauge/Alloc/",
+			args:        "gauge/gAlloc/",
 			contentType: "text/plain",
 			want: want{
 				code:     400,
-				response: "metric value not found",
+				response: "Incorrect metric value",
 			},
 		},
 		{
@@ -68,7 +59,7 @@ func TestUpdateMetrics(t *testing.T) {
 			contentType: "text/plain",
 			want: want{
 				code:     404,
-				response: "Не указано имя метрики",
+				response: "metric name is not found",
 			},
 		},
 		{
@@ -78,13 +69,13 @@ func TestUpdateMetrics(t *testing.T) {
 			contentType: "text/plain",
 			want: want{
 				code:     404,
-				response: "Не указано имя метрики",
+				response: "metric name is not found",
 			},
 		},
 		{
 			name:        "wrong metric value #1 (gauge)",
 			method:      http.MethodPost,
-			args:        "gauge/Alloc/none",
+			args:        "gauge/gAlloc/none",
 			contentType: "text/plain",
 			want: want{
 				code:     400,
@@ -94,7 +85,7 @@ func TestUpdateMetrics(t *testing.T) {
 		{
 			name:        "wrong metric value #2 (counter)",
 			method:      http.MethodPost,
-			args:        "counter/Alloc/none",
+			args:        "counter/cAlloc/none",
 			contentType: "text/plain",
 			want: want{
 				code:     400,

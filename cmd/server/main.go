@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/rekh/_temp/goprocoursedevopsproject/cmd/server/handlers"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/rekh/_temp/goprocoursedevopsproject/internal/handlers"
 )
 
 const (
